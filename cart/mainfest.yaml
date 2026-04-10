@@ -1,0 +1,102 @@
+apiVerion: v1
+kind: ConfigMap
+metadata:
+  name: cart
+  namespace: roboshop
+  labels:
+    project: roboshop
+    tier: db
+    component: cart
+data:
+  REDIS_HOST: "redis"
+  CATALOGUE_HOST: "catalogue"
+  CATALOGUE_PORT: "8080"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart
+  namespace: roboshop
+  labels: 
+    project: roboshop
+    tier: backend
+    component: cart
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      project: roboshop
+      tier: backend
+      component: cart
+  template:
+    metadata:
+      labels:
+        project: roboshop
+        tier: backend
+        component: cart
+    spec:
+      containers:
+      - name: cart
+        image: annurukulasekhar/cart:1.4.0
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "120Mi"
+            cpu: "100m"
+          limits:
+            memory: "120Mi"
+            cpu: "100m"
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          failureThreshold: 2
+          periodSeconds: 10
+          initialDelaySeconds: 15
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          failureThreshold: 2
+          periodSeconds: 10
+        envFrom:
+        - configMapRef:
+            name: cart
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart
+  namespace: robboshop
+  labels:
+    project: roboshop
+    tier: backend
+    component: cart
+spec:
+  selector:
+    project: roboshop
+    tier: backend
+    component: caart
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cart
+  namespaace: roboshop
+spec:
+  scaleTargetRef:
+    apiiVersion: apps/v1
+    kind: Deployment
+    name: cart
+minReplicas: 1
+maxReplicas: 10
+metrics:
+- type: Resource
+  resource:
+    name: cpu
+    target:
+      type: Utilization
+      averageUtilization: 20
