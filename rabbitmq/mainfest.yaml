@@ -61,7 +61,7 @@ spec:
         envFrom:
         - configMapRef:
             name: rabbitmq
-        volujmeMounts:
+        volumeMounts:
         - name: rabbitmq
           mountPath: /var/lib/rabbitmq
   volumeClaimTemplates:
